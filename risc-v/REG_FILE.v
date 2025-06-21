@@ -9,11 +9,14 @@ module REG_FILE #(
 	input wire [AWIDTH-1:0] RA1, RA2, WA,
 	input wire [DWIDTH-1:0] WD,
 	output wire [DWIDTH-1:0] RD1, RD2,
-	input wire i_dbg_run
+	input wire i_dbg_run,
+	input wire [4:0] i_dbg_addr,
+	output wire [31:0] o_dbg_reg
 );
 
 	//Declare the register that will store the data
 	reg [DWIDTH-1:0] RF [MDEPTH-1:0];
+	assign o_dbg_reg = RF[i_dbg_addr];
 
 	// Inicialização dos registradores (opcional, apenas para simulação)
     integer i;
@@ -43,8 +46,8 @@ module REG_FILE #(
 		else if (~RSTn)
     		begin
 			RF[0] <= 32'b0;
-			RF[2] <= 32'hF00; //Isso explica pq está alterado no GtkWave
-			RF[3] <= 32'h100;
+			RF[2] <= 32'h00; //Isso explica pq está alterado no GtkWave
+			RF[3] <= 32'h00;
 			RF[1] <= 32'b0;
 			RF[4] <= 32'b0;
 			RF[5] <= 32'b0;

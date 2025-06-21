@@ -170,16 +170,16 @@ module Control (
 		end
 		*/
 		else begin // when opcode does not belong to any case 
-			RegDst=1'bx;
+			RegDst=1'b0;
 			// Jump=1'bx; 
 			// Branch=1'bx;
 			// MemRead=1'bx;
-			MemtoReg=1'bx;
+			MemtoReg=1'b0;
 			ALUOp=7'bxxxxxxx;
-			MemWrite=1'bx;
-			ALUSrc2=1'bx;
-			RegWrite=1'bx;
-			BE=4'bxxxx;
+			MemWrite=1'b0;
+			ALUSrc2=1'b0;
+			RegWrite=1'b0;
+			BE=4'b0000;
 			Concat_control=3'b000;
 		end
 	end

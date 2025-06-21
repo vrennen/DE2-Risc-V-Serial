@@ -11,7 +11,7 @@ module RISCV_TOP (
 	//I-Memory Signals
 	output wire I_MEM_CSN,
 	input wire [31:0] I_MEM_DI,//input from IM - dado no testbench determinado pelo sram que lê o arquivo de soma5.bin e repassa para o resto do processador
-	output reg [11:0] I_MEM_ADDR,//in byte address
+	output reg [13:0] I_MEM_ADDR,//in byte address
 
 	//D-Memory Signals
 	output wire D_MEM_CSN,
@@ -31,11 +31,12 @@ module RISCV_TOP (
 	output wire [31:0] RF_WD,
 
 	
-	output wire HALT,                   // if set, terminate program
+	output reg HALT,                   // if set, terminate program
 	output reg [31:0] NUM_INST,         // number of instruction completed
 	output wire [31:0] OUTPUT_PORT,      // equal RF_WD this port is used for test
 	
-	input wire i_dbg_run
+	input wire i_dbg_run,
+	output [31:0] dbg_PC
 	);
 
 
@@ -92,6 +93,7 @@ module RISCV_TOP (
 	// wire [31:0] Branch_Target;
 	reg [31:0] PC; //Registro do PC atual
 	wire [31:0] NXT_PC; // valor do proximo PC
+	assign dbg_PC = PC;
 	// wire Branch_Taken;
 	
 	//instantiate ALU module
@@ -116,10 +118,13 @@ module RISCV_TOP (
 	always @(posedge CLK or negedge RSTn) begin //PC é determinado na subida do clock
 		if (!RSTn) begin
 			PC <= 0;
+			HALT <= 0;
 		end else begin
 			if (i_dbg_run) begin
 				PC <= NXT_PC;// PC começa em zero e vai recebendo os valores de NXT+PC
-				I_MEM_ADDR <= NXT_PC[11:0]; // nxt_pc determina I_MEM_ADDR
+				I_MEM_ADDR <= NXT_PC[13:0]; // nxt_pc determina I_MEM_ADDR
+				if (I_MEM_DI == 0) HALT <= 1;
+				else HALT <= HALT;
 			end
 		end
 	end
@@ -147,7 +152,7 @@ module RISCV_TOP (
 
 	//Check two sequence of instructions for HALT
 	//assign HALT = (RF_RD1 == 32'h0000000c) || (I_MEM_DI == 32'h00008067);	
-	assign HALT = (I_MEM_DI == 32'b00000000000000000000000000000000);
+	//assign HALT = (I_MEM_DI == 32'b00000000000000000000000000000000);
 	
 	// assign OUTPUT_PORT = (Branch) ? Branch_Taken : (MemWrite)? ALU_Result : RF_WD;
 	assign OUTPUT_PORT = (MemWrite)? ALU_Result : RF_WD;

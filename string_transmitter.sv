@@ -8,7 +8,8 @@ module string_transmitter(
 	input [31:0] i_tx_number,
 	output reg [7:0] tx_data,
 	output reg o_send_to_computer,
-	output reg [3:0] o_mem_index,
+	//output reg [3:0] o_mem_index,
+	output logic o_number_ready,
 	output reg [31:0] o_rx_number,
 	output [1:0] dbg_counter
 );
@@ -52,6 +53,7 @@ module string_transmitter(
 	logic [1:0] delay;
 	assign dbg_counter = counter;
 	//reg [3:0] o_mem_index;
+	logic [3:0] mem_index;
 	reg state, next_state;
 	always@(posedge i_Clk or negedge i_Rst) begin
 		if (!i_Rst) begin
@@ -64,11 +66,11 @@ module string_transmitter(
 		next_state = state;
 		case(state)
 			1'b0: begin // recebendo os numeros
-						if (o_mem_index == 4'd8) next_state = 1'b1;
+						if (mem_index == 4'd8 && !i_proc_busy) next_state = 1'b1;
 						else next_state = 1'b0;
 					end
 			1'b1: begin // enviando o resultado
-						if (o_mem_index == 4'd12 && !i_txd_busy) next_state = 1'b0;
+						if (mem_index == 4'd12 && !i_txd_busy) next_state = 1'b0;
 						else next_state = 1'b1;
 					end
 		endcase
@@ -77,21 +79,28 @@ module string_transmitter(
 	always@(posedge i_Clk or negedge i_Rst) begin
 		if (!i_Rst) begin
 			counter <= 0;
-			o_mem_index <= 0;
+			//o_mem_index <= 0;
+			mem_index <= 0;
+			o_number_ready <= 0;
 			japegouhomi <= 0;
 			delay <= 0;
 		end
 		else begin
+		o_number_ready <= 1'b0;
+		//if (state != next_state) mem_index <= 4'd0;
+		if (state == 1 && next_state == 0) mem_index <= 4'd0;
+		o_send_to_computer <= 1'b0;
 		case(state)
 			1'b0: begin
 						o_send_to_computer <= 1'b0;
 						if (i_rx_end) begin
 							if (!japegouhomi) begin
 								japegouhomi <= 1;
-								
 								if (counter == 2'd3) begin
 									o_rx_number <= {buffer[23:0], i_rx_data};
-									o_mem_index <= o_mem_index + 1'b1;
+									//o_mem_index <= o_mem_index + 1'b1;
+									mem_index <= mem_index + 1'b1;
+									o_number_ready <= 1'b1;
 								end
 								counter <= counter + 1'b1;
 							end else begin
@@ -113,7 +122,11 @@ module string_transmitter(
 								2'b10: tx_data <= i_tx_number[15:8];
 								2'b11: tx_data <= i_tx_number[7:0];
 							endcase
-								if (counter == 2'd3) o_mem_index <= o_mem_index + 1'b1;
+								if (counter == 2'd3) begin
+									o_number_ready <= 1'b1;
+									if (mem_index == 12) mem_index <= 4'b0;
+									else mem_index <= mem_index + 1'b1;
+								end
 								counter <= counter + 1'b1;
 							end
 						end

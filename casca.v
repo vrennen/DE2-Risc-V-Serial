@@ -25,6 +25,7 @@ module casca(
   wire [7:0] send_char;
   wire [7:0] received_char;
   wire rx_end;
+  wire number_ready;
   
   string_transmitter transmissao(
 	 .i_Clk(CLOCK_50),
@@ -36,7 +37,8 @@ module casca(
 	 .i_tx_number(mem_output),
 	 .tx_data(send_char),
 	 .o_send_to_computer(send_computer),
-	 .o_mem_index(mem_index),
+	 //.o_mem_index(mem_index),
+	 .o_number_ready(number_ready),
 	 .o_rx_number(mem_input),
 	 .dbg_counter(LEDG)
 	 );
@@ -64,7 +66,8 @@ module casca(
 	 .i_Clk(CLOCK_50),
 	 .i_Rstn(KEY[0]),
 	 .i_mem_input(mem_input),
-	 .i_mem_index(mem_index),
+	 //.i_mem_index(mem_index),
+	 .i_number_ready(number_ready),
 	 .o_mem_output(mem_output),
 	 .o_proc_busy(proc_busy),
 	 .dbg_HALT(haltou),
@@ -72,7 +75,9 @@ module casca(
 	 .dbg_instruct(number),
 	 .dbg_PC(dbg_PC),
 	 .dbg_mem_addr(SW[9:0]),
-	 .dbg_dump(dbg_mem_out)
+	 .dbg_dump(dbg_mem_out),
+	 .dbg_mem_index(mem_index),
+	 .dbg_manual_clock(~KEY[3]),
   );
   
 
@@ -80,7 +85,9 @@ module casca(
   assign LEDR[17] = proc_busy;
   assign LEDR[16] = haltou;
   assign LEDR[15] = KEY[0];
-  assign LEDR[12:11] = estado_risc;
+  assign LEDR[14] = ~KEY[3];
+  assign LEDR[13:12] = estado_risc;
+  assign LEDR[11:4] = dbg_PC[7:0];
   SEG7_LUT_8 sl_1(	HEX0,HEX1,HEX2,HEX3,HEX4,HEX5,HEX6,HEX7,dbg_mem_out);
 
 endmodule 
