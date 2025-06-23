@@ -16,10 +16,11 @@ module riscv_casca(
 	input [9:0] dbg_mem_addr,
 	output wire [31:0] dbg_dump,
 	output wire [3:0] dbg_mem_index,
-	input dbg_manual_clock
+	input dbg_manual_clock,
+	output dbg_assert_pc
 );
 
-  // Sinais de saída
+  // Sinais de sai­da
   wire I_MEM_CSN;
   wire [31:0] I_MEM_DI;
   wire [13:0] I_MEM_ADDR;
@@ -41,11 +42,20 @@ module riscv_casca(
   wire [31:0] OUTPUT_PORT;
   wire [31:0] DOUT;
  
-  assign dbg_in = DOUT;
+  assign dbg_instruct = DOUT;
   assign dbg_HALT = HALT;
+  
+  logic [1:0] clockcounter;
+  logic dbg_clockreduzido;
+  
+  always@(posedge i_Clk) begin
+		clockcounter <= clockcounter+1;
+  end
+  assign dbg_clockreduzido = clockcounter[1];
+  
   // Instanciando o processador
   RISCV_TOP riscv_top (
-      .CLK(i_Clk), // fazer o processador rodar apos receber as matrizes
+      .CLK(dbg_clockreduzido), // fazer o processador rodar apos receber as matrizes
       .RSTn(i_Rstn),            // reset negative
       .I_MEM_CSN(I_MEM_CSN),
       .I_MEM_DI(DOUT), //tava ligado em I_MEM_DI
@@ -67,24 +77,25 @@ module riscv_casca(
       .NUM_INST(NUM_INST),
       .OUTPUT_PORT(OUTPUT_PORT),
 		.i_dbg_run(risc_v_on),
-		.dbg_PC(dbg_PC)
+		.dbg_PC(dbg_PC),
+		.dbg_assert_pc(dbg_assert_pc)
   );
  
-  // Instanciando o módulo de memória de instrucao
-  SP_SRAM #(.ROMDATA("binarios/matrixmul2.bin"), .AWIDTH(12), .SIZE(2048)) inst_mem (
-      .CLK(i_Clk), // CLK do tb especificado em RISCV_CLKRST
-      .CSN(I_MEM_CSN), // Inverso do Reset
+  // Instanciando o mÃ³dulo de memÃ³ria de instrucao
+  SP_SRAM #(.ROMDATA("binarios/matrixmul_addshiftsltsub.bin"), .AWIDTH(12), .SIZE(2048)) inst_mem (
+      .CLK(dbg_clockreduzido), // CLK do tb especificado em RISCV_CLKRST
+      .CSN(0), // Inverso do Reset
       .ADDR(I_MEM_ADDR[13:2]), // Recebe o valor de NEXT_PC
-      .WEN(1'b1), // Tem de estar ativo para não usar a entrada de DI
+      .WEN(1'b1), // Tem de estar ativo para nÃ£o usar a entrada de DI
       .BE(4'b1111), // permite que todos os 4 bytes sejam lidos na sram
-      .DI(), // Só recebe algo na memoria de dados
-      .DOUT(DOUT), // A memória de programa fornece as instruções para o processador e é a fonte de meu problema
+      .DI(), // SÃ³ recebe algo na memoria de dados
+      .DOUT(DOUT), // A memÃ³ria de programa fornece as instruÃ§Ãµes para o processador e Ã© a fonte de meu problema
 		.i_dbg_run(risc_v_on),
 		.dbg_addr(),
 		.dbg_dump()
   );
 	//assign dbg_PC = DOUT;
-  // Instanciando o módulo de memória de dados
+  // Instanciando o mÃ³dulo de memÃ³ria de dados
   /*
   SP_SRAM #(.ROMDATA("binarios/datamemory.bin"), .AWIDTH(11), .SIZE(1024)) data_mem (
       .CLK(i_Clk),			// clock
@@ -99,6 +110,11 @@ module riscv_casca(
 		.dbg_dump(dbg_dump)
   );
   */
+  /*rom inst_mem(
+	.clock(i_Clk),
+	.address(I_MEM_ADDR[12:2]),
+	.q(DOUT)
+  );*/
   ram data_mem(
 	.clock(i_Clk),
 	.address(mem_addr),
@@ -108,12 +124,12 @@ module riscv_casca(
 	.q(mem_output)
   );
 
-  // Atribuição de D_MEM_DI para ser igual a DOUT da memória de	 programa
+  // AtribuiÃ§Ã£o de D_MEM_DI para ser igual a DOUT da memÃ³ria de	 programa
   //assign D_MEM_DI = //DOUT;
 
-  // Instanciando o módulo de banco de registradores
+  // Instanciando o modulo de banco de registradores
   REG_FILE reg_file (
-      .CLK(i_Clk),
+      .CLK(dbg_clockreduzido),
       .WE(RF_WE),
       .RSTn(i_Rstn),
       .RA1(RF_RA1),

@@ -36,7 +36,8 @@ module RISCV_TOP (
 	output wire [31:0] OUTPUT_PORT,      // equal RF_WD this port is used for test
 	
 	input wire i_dbg_run,
-	output [31:0] dbg_PC
+	output wire [31:0] dbg_PC,
+	output wire dbg_assert_pc
 	);
 
 
@@ -94,6 +95,7 @@ module RISCV_TOP (
 	reg [31:0] PC; //Registro do PC atual
 	wire [31:0] NXT_PC; // valor do proximo PC
 	assign dbg_PC = PC;
+	assign dbg_assert_pc = (NXT_PC == PC+ 32'd4);
 	// wire Branch_Taken;
 	
 	//instantiate ALU module
@@ -114,7 +116,8 @@ module RISCV_TOP (
 	// assign Branch_Taken = Branch & Zero; //Recebe do controle e da alu
 	// assign NXT_PC = (~RSTn)? 0 : (Jump)? ( (JALorJALR)? JALR_Address : JAL_Address ) : ((Branch_Taken)? Branch_Target : PC+4 );// Reset do Testbench (esse que é especificado em RISCV_CLKRST), Jump vem do controle, JAL or JALR vem do controle, JAL_Adress e JALR_Adress determinados em cima, Branch Taken e Branch targer em cima tbm PC é um registrador desse modulo
 	// assign NXT_PC = (~RSTn)? 0 : ((Branch_Taken)? Branch_Target : PC+4 );
-	assign NXT_PC = (~RSTn)? 0 : (PC+4);
+	//assign NXT_PC = (~RSTn)? 0 : (PC+32'd4);
+	assign NXT_PC = PC + 32'd4;
 	always @(posedge CLK or negedge RSTn) begin //PC é determinado na subida do clock
 		if (!RSTn) begin
 			PC <= 0;
@@ -122,9 +125,12 @@ module RISCV_TOP (
 		end else begin
 			if (i_dbg_run) begin
 				PC <= NXT_PC;// PC começa em zero e vai recebendo os valores de NXT+PC
-				I_MEM_ADDR <= NXT_PC[13:0]; // nxt_pc determina I_MEM_ADDR
-				if (I_MEM_DI == 0) HALT <= 1;
+				I_MEM_ADDR <= PC[13:0]; // nxt_pc determina I_MEM_ADDR
+				if (I_MEM_DI == 1/*32'h00832e83*/) HALT <= 1;
 				else HALT <= HALT;
+			end
+			else begin
+				PC <= PC;
 			end
 		end
 	end

@@ -1,11 +1,11 @@
 module casca(
 	input CLOCK_50,
 	input [3:0] KEY,
-	input [9:0] SW,
+	input [17:0] SW,
 	input UART_RXD,
 	output UART_TXD,
 	//output [17:0] LEDR,
-	output [1:0] LEDG,
+	output [8:0] LEDG,
 	
 	// os leds e os displays de 7 segmentos nao estao sendo usados, mas manter aqui caso sejam necessarioss
 	output [17:0] LEDR, // vai apresentar a quantidade de dados recebidos do computador
@@ -40,7 +40,7 @@ module casca(
 	 //.o_mem_index(mem_index),
 	 .o_number_ready(number_ready),
 	 .o_rx_number(mem_input),
-	 .dbg_counter(LEDG)
+	 .dbg_counter(LEDG[1:0])
 	 );
   
   Serial echo(
@@ -58,10 +58,12 @@ module casca(
   wire [3:0] mem_index;
   wire proc_busy;
   wire haltou;
-  wire [2:0] estado_risc;
+  wire [1:0] estado_risc;
   wire [31:0] number;
   wire [31:0] dbg_PC;
   wire [31:0] dbg_mem_out;
+  wire [31:0] dbg_desgraca_de_numero;
+  assign dbg_desgraca_de_numero = (SW[9:0] == 0) ? number : dbg_mem_out;
   riscv_casca processador(
 	 .i_Clk(CLOCK_50),
 	 .i_Rstn(KEY[0]),
@@ -78,6 +80,7 @@ module casca(
 	 .dbg_dump(dbg_mem_out),
 	 .dbg_mem_index(mem_index),
 	 .dbg_manual_clock(~KEY[3]),
+	 .dbg_assert_pc(LEDG[8])
   );
   
 
@@ -87,7 +90,7 @@ module casca(
   assign LEDR[15] = KEY[0];
   assign LEDR[14] = ~KEY[3];
   assign LEDR[13:12] = estado_risc;
-  assign LEDR[11:4] = dbg_PC[7:0];
-  SEG7_LUT_8 sl_1(	HEX0,HEX1,HEX2,HEX3,HEX4,HEX5,HEX6,HEX7,dbg_mem_out);
+	  assign LEDR[11:4] = dbg_PC[9:2];
+  SEG7_LUT_8 sl_1(	HEX0,HEX1,HEX2,HEX3,HEX4,HEX5,HEX6,HEX7,dbg_desgraca_de_numero);
 
 endmodule 

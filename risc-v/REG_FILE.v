@@ -18,7 +18,7 @@ module REG_FILE #(
 	reg [DWIDTH-1:0] RF [MDEPTH-1:0];
 	assign o_dbg_reg = RF[i_dbg_addr];
 
-	// Inicialização dos registradores (opcional, apenas para simulação)
+	// Inicializacaoo dos registradores (opcional, apenas para simulacao)
     integer i;
     initial begin
         for (i = 0; i < 32; i = i + 1) begin
@@ -46,7 +46,7 @@ module REG_FILE #(
 		else if (~RSTn)
     		begin
 			RF[0] <= 32'b0;
-			RF[2] <= 32'h00; //Isso explica pq está alterado no GtkWave
+			RF[2] <= 32'h00; //Isso explica pq esta¡ alterado no GtkWave
 			RF[3] <= 32'h00;
 			RF[1] <= 32'b0;
 			RF[4] <= 32'b0;
